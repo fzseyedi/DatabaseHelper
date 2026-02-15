@@ -1,0 +1,495 @@
+﻿<UserControl x:Class="DatabaseBackupManager.Views.DataTransferView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DatabaseBackupManager.Views"
+             xmlns:models="clr-namespace:DatabaseBackupManager.Models"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             mc:Ignorable="d" 
+             d:DesignHeight="650" 
+             d:DesignWidth="900"
+             Loaded="UserControl_Loaded">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <ObjectDataProvider x:Key="DestAuthTypes" 
+                            MethodName="GetValues" 
+                            ObjectType="{x:Type sys:Enum}">
+            <ObjectDataProvider.MethodParameters>
+                <x:Type TypeName="models:AuthenticationType"/>
+            </ObjectDataProvider.MethodParameters>
+        </ObjectDataProvider>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" 
+                   Text="انتقال داده بین سرورها" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,15"/>
+
+        <!-- Step Indicator -->
+        <Border Grid.Row="1" Background="#FFECF0F1" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Step 1 -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Ellipse Width="30" Height="30" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#FFBDC3C7"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsStep1}" Value="True">
+                                        <Setter Property="Fill" Value="#FF3498DB"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="۱. سرور مقصد" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="1" Text="→" FontSize="18" VerticalAlignment="Center" Margin="10,0"/>
+
+                <!-- Step 2 -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Ellipse Width="30" Height="30" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#FFBDC3C7"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsStep2}" Value="True">
+                                        <Setter Property="Fill" Value="#FF3498DB"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="۲. منبع داده" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+
+                <TextBlock Grid.Column="3" Text="→" FontSize="18" VerticalAlignment="Center" Margin="10,0"/>
+
+                <!-- Step 3 -->
+                <StackPanel Grid.Column="4" Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Ellipse Width="30" Height="30" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="#FFBDC3C7"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsStep3}" Value="True">
+                                        <Setter Property="Fill" Value="#FF3498DB"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock Text="۳. مقصد و اجرا" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ==================== STEP 1: Destination Server ==================== -->
+        <Border Grid.Row="2" 
+                Background="White" CornerRadius="8" Padding="20"
+                Visibility="{Binding IsStep1, Converter={StaticResource BoolToVisConverter}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+            </Border.Effect>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="450"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Destination Connection Form -->
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="تنظیمات سرور مقصد" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                    <TextBlock Text="نام سرور:" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding DestinationSettings.ServerName, UpdateSourceTrigger=PropertyChanged}" 
+                             Padding="8" Margin="0,0,0,15" FlowDirection="LeftToRight"/>
+
+                    <TextBlock Text="احراز هویت:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding Source={StaticResource DestAuthTypes}}"
+                              SelectedItem="{Binding DestinationSettings.AuthenticationType}"
+                              Padding="8" Margin="0,0,0,15"/>
+
+                    <!-- SQL Credentials -->
+                    <StackPanel>
+                        <StackPanel.Style>
+                            <Style TargetType="StackPanel">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding DestinationSettings.AuthenticationType}" 
+                                                 Value="{x:Static models:AuthenticationType.SqlServer}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </StackPanel.Style>
+
+                        <TextBlock Text="نام کاربری:" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding DestinationSettings.Username, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="8" Margin="0,0,0,15" FlowDirection="LeftToRight"/>
+
+                        <TextBlock Text="رمز عبور:" Margin="0,0,0,5"/>
+                        <PasswordBox x:Name="DestPasswordBox" 
+                                     Padding="8" Margin="0,0,0,15" FlowDirection="LeftToRight"
+                                     PasswordChanged="DestPasswordBox_PasswordChanged"/>
+                    </StackPanel>
+
+                    <CheckBox Content="اعتماد به گواهی سرور" 
+                              IsChecked="{Binding DestinationSettings.TrustServerCertificate}"
+                              Margin="0,0,0,10"/>
+
+                    <CheckBox Content="یادآوری تنظیمات مقصد" 
+                              IsChecked="{Binding RememberDestinationSettings}"
+                              Margin="0,0,0,20"/>
+
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="تست اتصال" 
+                                Command="{Binding TestDestinationConnectionCommand}"
+                                Padding="15,8" Margin="0,0,10,0"
+                                Background="#FF9B59B6" Foreground="White" BorderThickness="0"/>
+                        <Button Content="اتصال" 
+                                Command="{Binding ConnectDestinationCommand}"
+                                Padding="15,8" Margin="0,0,10,0"
+                                Background="#FF27AE60" Foreground="White" BorderThickness="0"/>
+                        <Button Content="پاک کردن تنظیمات" 
+                                Command="{Binding ClearDestinationSettingsCommand}"
+                                Padding="15,8"
+                                Background="#FF95A5A6" Foreground="White" BorderThickness="0"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Connection Status Panel -->
+                <Border Grid.Column="1" Background="#FFF8F9FA" CornerRadius="8" Padding="20" Margin="15,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="وضعیت اتصال مقصد" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                        <Border Background="#FFECF0F1" CornerRadius="5" Padding="10" Margin="0,0,0,15">
+                            <StackPanel Orientation="Horizontal">
+                                <Ellipse Width="10" Height="10" Margin="0,0,10,0">
+                                    <Ellipse.Style>
+                                        <Style TargetType="Ellipse">
+                                            <Setter Property="Fill" Value="#FFE74C3C"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDestinationConnected}" Value="True">
+                                                    <Setter Property="Fill" Value="#FF27AE60"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Ellipse.Style>
+                                </Ellipse>
+                                <TextBlock Text="{Binding DestinationConnectionStatus}" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <TextBlock Text="ℹ️ راهنمایی" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                        <TextBlock TextWrapping="Wrap" FontSize="12">
+                            <Run>1. مشخصات سرور مقصد را وارد کنید</Run>
+                            <LineBreak/>
+                            <Run>2. نوع احراز هویت را انتخاب کنید</Run>
+                            <LineBreak/>
+                            <Run>3. ابتدا تست اتصال و سپس اتصال را بزنید</Run>
+                            <LineBreak/>
+                            <Run>4. پس از اتصال موفق، دکمه مرحله بعد را بزنید</Run>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ==================== STEP 2: Source Data Selection ==================== -->
+        <Border Grid.Row="2" 
+                Background="White" CornerRadius="8" Padding="20"
+                Visibility="{Binding IsStep2, Converter={StaticResource BoolToVisConverter}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+            </Border.Effect>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="450"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Source Selection Form -->
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="انتخاب منبع داده" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                    <!-- Source Database -->
+                    <TextBlock Text="پایگاه داده مبدا:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding SourceDatabases}"
+                              SelectedItem="{Binding SelectedSourceDatabase}"
+                              DisplayMemberPath="Name"
+                              Padding="8" Margin="0,0,0,15"/>
+
+                    <!-- Transfer Mode -->
+                    <TextBlock Text="روش انتقال:" Margin="0,0,0,10" FontWeight="SemiBold"/>
+                    <RadioButton Content="کپی از جدول" 
+                                 IsChecked="{Binding IsTableMode}"
+                                 Margin="0,0,0,5" GroupName="TransferMode"/>
+                    <RadioButton Content="از طریق کوئری (Query)" 
+                                 IsChecked="{Binding IsQueryMode}"
+                                 Margin="0,0,0,15" GroupName="TransferMode"/>
+
+                    <!-- Table Selection (conditional) -->
+                    <StackPanel Visibility="{Binding IsTableMode, Converter={StaticResource BoolToVisConverter}}"
+                                Margin="0,0,0,15">
+                        <TextBlock Text="انتخاب جدول:" Margin="0,0,0,5"/>
+                        <ComboBox ItemsSource="{Binding SourceTables}"
+                                  SelectedItem="{Binding SelectedSourceTable}"
+                                  DisplayMemberPath="Name"
+                                  Padding="8"/>
+                    </StackPanel>
+
+                    <!-- Query TextBox (conditional) -->
+                    <StackPanel Visibility="{Binding IsQueryMode, Converter={StaticResource BoolToVisConverter}}"
+                                Margin="0,0,0,15">
+                        <TextBlock Text="کوئری SQL:" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding CustomQuery, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="8" Height="120"
+                                 AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 FlowDirection="LeftToRight"
+                                 FontFamily="Consolas"/>
+                    </StackPanel>
+
+                    <!-- Buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="👁 پیش‌نمایش" 
+                                Command="{Binding PreviewDataCommand}"
+                                Padding="15,8" Margin="0,0,10,0"
+                                Background="#FF3498DB" Foreground="White" BorderThickness="0"/>
+                        <Button Content="🔢 شمارش رکوردها" 
+                                Command="{Binding GetRowCountCommand}"
+                                Padding="15,8"
+                                Background="#FF9B59B6" Foreground="White" BorderThickness="0"/>
+                    </StackPanel>
+
+                    <!-- Row Count -->
+                    <TextBlock Margin="0,10,0,0" FontWeight="SemiBold">
+                        <Run Text="تعداد رکوردها: "/>
+                        <Run Text="{Binding SourceRowCount, Mode=OneWay}"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Preview Panel -->
+                <Border Grid.Column="1" Background="#FFF8F9FA" CornerRadius="8" Padding="15" Margin="15,0,0,0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Text="پیش‌نمایش داده‌ها" 
+                                   FontSize="16" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                        <DataGrid Grid.Row="1"
+                                  ItemsSource="{Binding PreviewData}"
+                                  AutoGenerateColumns="True"
+                                  IsReadOnly="True"
+                                  HeadersVisibility="Column"
+                                  GridLinesVisibility="All"
+                                  BorderThickness="1"
+                                  BorderBrush="#FFBDC3C7"
+                                  MaxHeight="400"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  VerticalScrollBarVisibility="Auto"
+                                  FlowDirection="LeftToRight"/>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ==================== STEP 3: Destination & Execute ==================== -->
+        <Border Grid.Row="2" 
+                Background="White" CornerRadius="8" Padding="20"
+                Visibility="{Binding IsStep3, Converter={StaticResource BoolToVisConverter}}">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+            </Border.Effect>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" MaxWidth="450"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Destination Config -->
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="تنظیمات مقصد و اجرا" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                    <!-- Destination Database -->
+                    <TextBlock Text="پایگاه داده مقصد:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding DestinationDatabases}"
+                              SelectedItem="{Binding SelectedDestinationDatabase}"
+                              DisplayMemberPath="Name"
+                              Padding="8" Margin="0,0,0,15"/>
+
+                    <!-- Destination Table Name -->
+                    <TextBlock Text="نام جدول مقصد:" Margin="0,0,0,5"/>
+                    <TextBox Text="{Binding DestinationTableName, UpdateSourceTrigger=PropertyChanged}" 
+                             Padding="8" Margin="0,0,0,15" FlowDirection="LeftToRight"/>
+
+                    <!-- Transfer Action -->
+                    <TextBlock Text="نحوه انتقال:" Margin="0,0,0,10" FontWeight="SemiBold"/>
+                    <RadioButton Content="افزودن به داده‌های موجود (Append)" 
+                                 IsChecked="{Binding IsAppendMode}"
+                                 Margin="0,0,0,5" GroupName="TransferAction"/>
+                    <RadioButton Content="جایگزینی داده‌های قبلی (Replace)" 
+                                 IsChecked="{Binding IsReplaceMode}"
+                                 Margin="0,0,0,20" GroupName="TransferAction"/>
+
+                    <!-- Execute Buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="▶ شروع انتقال" 
+                                Command="{Binding TransferDataCommand}"
+                                Padding="15,10" Margin="0,0,10,0"
+                                Background="#FF27AE60" Foreground="White" 
+                                FontWeight="Bold" BorderThickness="0"/>
+                        <Button Content="⏹ لغو انتقال" 
+                                Command="{Binding CancelTransferCommand}"
+                                Padding="15,10"
+                                Background="#FFE74C3C" Foreground="White" BorderThickness="0"/>
+                    </StackPanel>
+
+                    <!-- Progress Section -->
+                    <StackPanel Margin="0,20,0,0"
+                                Visibility="{Binding IsTransferring, Converter={StaticResource BoolToVisConverter}}">
+                        <TextBlock Text="پیشرفت انتقال:" Margin="0,0,0,5"/>
+                        <ProgressBar Value="{Binding ProgressPercentage, Mode=OneWay}" 
+                                     Minimum="0" Maximum="100" Height="25"
+                                     Foreground="#FF27AE60"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <TextBlock Text="{Binding ProgressPercentage, StringFormat={}{0}%}" 
+                                       FontWeight="Bold" Margin="0,0,15,0"/>
+                            <TextBlock>
+                                <Run Text="{Binding TransferredRows, Mode=OneWay}"/>
+                                <Run Text=" رکورد منتقل شد"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Transfer Summary Panel -->
+                <Border Grid.Column="1" Background="#FFF8F9FA" CornerRadius="8" Padding="20" Margin="15,0,0,0">
+                    <StackPanel>
+                        <TextBlock Text="خلاصه انتقال" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,15"/>
+
+                        <Border Background="#FFECF0F1" CornerRadius="5" Padding="15" Margin="0,0,0,15">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="سرور مبدا:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Path=DataContext.ConnectionViewModel.ConnectionSettings.ServerName, RelativeSource={RelativeSource AncestorType=Window}, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="پایگاه داده مبدا:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedSourceDatabase.Name, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="منبع:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedSourceTable.Name, FallbackValue='کوئری سفارشی'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="تعداد رکوردها:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SourceRowCount, FallbackValue='0'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="4" Grid.Column="0" Text="سرور مقصد:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding DestinationSettings.ServerName, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="5" Grid.Column="0" Text="پایگاه داده مقصد:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding SelectedDestinationDatabase.Name, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="6" Grid.Column="0" Text="جدول مقصد:" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                                <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding DestinationTableName, FallbackValue='-'}" Margin="0,0,0,0"/>
+                            </Grid>
+                        </Border>
+
+                        <!-- Warning for Replace -->
+                        <Border CornerRadius="5" Padding="10" Margin="0,0,0,10"
+                                Visibility="{Binding IsReplaceMode, Converter={StaticResource BoolToVisConverter}}">
+                            <Border.Background>
+                                <SolidColorBrush Color="#FFFDE8E8"/>
+                            </Border.Background>
+                            <TextBlock TextWrapping="Wrap" Foreground="#FFE74C3C">
+                                <Run FontWeight="Bold">⚠️ هشدار:</Run>
+                                <Run>حالت جایگزینی انتخاب شده است. تمام داده‌های موجود در جدول مقصد حذف خواهند شد.</Run>
+                            </TextBlock>
+                        </Border>
+
+                        <!-- Info -->
+                        <TextBlock TextWrapping="Wrap" FontSize="12" Foreground="#FF7F8C8D">
+                            <Run FontWeight="SemiBold">نکته:</Run>
+                            <Run>اگر جدول مقصد وجود نداشته باشد، به صورت خودکار ایجاد می‌شود.</Run>
+                            <LineBreak/>
+                            <Run>در صورت بروز خطا، تمام تغییرات بازگردانی (Rollback) می‌شوند.</Run>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ==================== Navigation Footer ==================== -->
+        <Border Grid.Row="3" Margin="0,15,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Loading Indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center"
+                            Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisConverter}}">
+                    <TextBlock Text="⏳ " FontSize="14"/>
+                    <TextBlock Text="لطفا صبر کنید..." FontStyle="Italic"/>
+                </StackPanel>
+
+                <!-- Navigation Buttons -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Left">
+                    <Button Content="→ مرحله قبل" 
+                            Command="{Binding PreviousStepCommand}"
+                            Padding="20,10" Margin="0,0,10,0"
+                            Background="#FF95A5A6" Foreground="White" 
+                            FontWeight="Bold" BorderThickness="0"/>
+                    <Button Content="← مرحله بعد" 
+                            Command="{Binding NextStepCommand}"
+                            Padding="20,10"
+                            Background="#FF3498DB" Foreground="White" 
+                            FontWeight="Bold" BorderThickness="0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

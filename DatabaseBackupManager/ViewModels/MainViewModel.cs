@@ -16,6 +16,7 @@ public class MainViewModel : ViewModelBase
     private readonly RestoreViewModel _restoreViewModel;
     private readonly ScheduleViewModel _scheduleViewModel;
     private readonly FieldManagerViewModel _fieldManagerViewModel;
+    private readonly DataTransferViewModel _dataTransferViewModel;
 
     public MainViewModel(ISqlServerService sqlServerService)
     {
@@ -25,6 +26,7 @@ public class MainViewModel : ViewModelBase
         _restoreViewModel = new RestoreViewModel(sqlServerService, _connectionViewModel);
         _scheduleViewModel = new ScheduleViewModel(sqlServerService, _connectionViewModel);
         _fieldManagerViewModel = new FieldManagerViewModel(sqlServerService, _connectionViewModel);
+        _dataTransferViewModel = new DataTransferViewModel(sqlServerService, _connectionViewModel);
 
         // Set default view
         CurrentViewModel = _connectionViewModel;
@@ -35,6 +37,7 @@ public class MainViewModel : ViewModelBase
         NavigateToRestoreCommand = new RelayCommand(() => CurrentViewModel = _restoreViewModel, CanNavigateToRestore);
         NavigateToScheduleCommand = new RelayCommand(() => CurrentViewModel = _scheduleViewModel, CanNavigateToSchedule);
         NavigateToFieldManagerCommand = new RelayCommand(() => CurrentViewModel = _fieldManagerViewModel, CanNavigateToFieldManager);
+        NavigateToDataTransferCommand = new RelayCommand(() => CurrentViewModel = _dataTransferViewModel, CanNavigateToDataTransfer);
 
         // Subscribe to connection changes
         _connectionViewModel.PropertyChanged += (s, e) =>
@@ -80,15 +83,22 @@ public class MainViewModel : ViewModelBase
     /// </summary>
     public FieldManagerViewModel FieldManagerViewModel => _fieldManagerViewModel;
 
+    /// <summary>
+    /// Gets the data transfer view model.
+    /// </summary>
+    public DataTransferViewModel DataTransferViewModel => _dataTransferViewModel;
+
     // Navigation Commands
     public ICommand NavigateToConnectionCommand { get; }
     public ICommand NavigateToBackupCommand { get; }
     public ICommand NavigateToRestoreCommand { get; }
     public ICommand NavigateToScheduleCommand { get; }
     public ICommand NavigateToFieldManagerCommand { get; }
+    public ICommand NavigateToDataTransferCommand { get; }
 
     private bool CanNavigateToBackup() => _connectionViewModel.IsConnected;
     private bool CanNavigateToRestore() => _connectionViewModel.IsConnected;
     private bool CanNavigateToSchedule() => _connectionViewModel.IsConnected;
     private bool CanNavigateToFieldManager() => _connectionViewModel.IsConnected;
+    private bool CanNavigateToDataTransfer() => _connectionViewModel.IsConnected;
 }

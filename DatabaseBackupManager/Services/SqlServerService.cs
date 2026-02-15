@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Data;
+using System.IO;
 using DatabaseBackupManager.Models;
 using Microsoft.Data.SqlClient;
 
@@ -414,5 +415,352 @@ public class SqlServerService : ISqlServerService
         };
 
         await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> TestDestinationConnectionAsync(
+        DestinationServerSettings destinationSettings,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            await using var connection = new SqlConnection(destinationSettings.BuildConnectionString());
+            await connection.OpenAsync(cancellationToken);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<IList<DatabaseInfo>> GetDestinationDatabasesAsync(
+        DestinationServerSettings destinationSettings,
+        CancellationToken cancellationToken = default)
+    {
+        var databases = new List<DatabaseInfo>();
+
+        const string query = @"
+            SELECT 
+                d.name,
+                d.state_desc,
+                d.recovery_model_desc,
+                CAST(SUM(mf.size) * 8 / 1024 AS BIGINT) AS SizeInMB,
+                MAX(b.backup_finish_date) AS LastBackupDate
+            FROM sys.databases d
+            LEFT JOIN sys.master_files mf ON d.database_id = mf.database_id
+            LEFT JOIN msdb.dbo.backupset b ON d.name = b.database_name AND b.type = 'D'
+            WHERE d.database_id > 4
+            GROUP BY d.name, d.state_desc, d.recovery_model_desc
+            ORDER BY d.name";
+
+        await using var connection = new SqlConnection(destinationSettings.BuildConnectionString());
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(query, connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            databases.Add(new DatabaseInfo
+            {
+                Name = reader["name"]?.ToString() ?? string.Empty,
+                Status = reader["state_desc"]?.ToString() ?? string.Empty,
+                RecoveryModel = reader["recovery_model_desc"]?.ToString() ?? string.Empty,
+                SizeInMB = reader["SizeInMB"] is long size ? size : 0,
+                LastBackupDate = reader["LastBackupDate"] as DateTime?
+            });
+        }
+
+        return databases;
+    }
+
+    /// <inheritdoc />
+    public async Task<long> GetRowCountAsync(
+        ConnectionSettings sourceSettings,
+        string databaseName,
+        string tableNameOrQuery,
+        bool isQuery = false,
+        CancellationToken cancellationToken = default)
+    {
+        var query = isQuery
+            ? $"SELECT COUNT(*) FROM ({tableNameOrQuery}) AS CountQuery"
+            : $"SELECT COUNT(*) FROM [{tableNameOrQuery}]";
+
+        var connectionString = sourceSettings.BuildConnectionString();
+        var builder = new SqlConnectionStringBuilder(connectionString)
+        {
+            InitialCatalog = databaseName
+        };
+
+        await using var connection = new SqlConnection(builder.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(query, connection)
+        {
+            CommandTimeout = 120
+        };
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt64(result);
+    }
+
+    /// <inheritdoc />
+    public async Task<DataTable> GetDataPreviewAsync(
+        ConnectionSettings sourceSettings,
+        string databaseName,
+        string tableNameOrQuery,
+        bool isQuery = false,
+        int maxRows = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = isQuery
+            ? $"SELECT TOP {maxRows} * FROM ({tableNameOrQuery}) AS PreviewQuery"
+            : $"SELECT TOP {maxRows} * FROM [{tableNameOrQuery}]";
+
+        var connectionString = sourceSettings.BuildConnectionString();
+        var builder = new SqlConnectionStringBuilder(connectionString)
+        {
+            InitialCatalog = databaseName
+        };
+
+        await using var connection = new SqlConnection(builder.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        await using var command = new SqlCommand(query, connection)
+        {
+            CommandTimeout = 60
+        };
+
+        var dataTable = new DataTable();
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        dataTable.Load(reader);
+
+        return dataTable;
+    }
+
+    /// <inheritdoc />
+    public async Task TransferDataAsync(
+        ConnectionSettings sourceSettings,
+        DestinationServerSettings destinationSettings,
+        DataTransferRequest request,
+        IProgress<TransferProgress>? progress = null,
+        CancellationToken cancellationToken = default)
+    {
+        // Build source connection string
+        var sourceConnStr = sourceSettings.BuildConnectionString();
+        var sourceBuilder = new SqlConnectionStringBuilder(sourceConnStr)
+        {
+            InitialCatalog = request.SourceDatabaseName
+        };
+
+        // Build destination connection string
+        var destConnStr = destinationSettings.BuildConnectionString();
+        var destBuilder = new SqlConnectionStringBuilder(destConnStr)
+        {
+            InitialCatalog = request.DestinationDatabaseName
+        };
+
+        // Step 1: Get total row count for progress
+        progress?.Report(new TransferProgress { StatusMessage = "در حال شمارش رکوردها..." });
+
+        var isQuery = request.TransferMode == DataTransferMode.Query;
+        var sourceExpression = isQuery ? request.CustomQuery : request.SourceTableName;
+        var totalRows = await GetRowCountAsync(sourceSettings, request.SourceDatabaseName, sourceExpression, isQuery, cancellationToken);
+
+        progress?.Report(new TransferProgress
+        {
+            TotalRows = totalRows,
+            StatusMessage = $"تعداد {totalRows} رکورد برای انتقال یافت شد."
+        });
+
+        // Step 2: Open source connection and read data
+        await using var sourceConnection = new SqlConnection(sourceBuilder.ConnectionString);
+        await sourceConnection.OpenAsync(cancellationToken);
+
+        var selectQuery = isQuery
+            ? request.CustomQuery
+            : $"SELECT * FROM [{request.SourceTableName}]";
+
+        await using var sourceCommand = new SqlCommand(selectQuery, sourceConnection)
+        {
+            CommandTimeout = 0
+        };
+
+        await using var sourceReader = await sourceCommand.ExecuteReaderAsync(cancellationToken);
+
+        // Step 3: Get source schema
+        var schemaTable = await sourceReader.GetColumnSchemaAsync(cancellationToken);
+
+        // Step 4: Open destination connection
+        await using var destConnection = new SqlConnection(destBuilder.ConnectionString);
+        await destConnection.OpenAsync(cancellationToken);
+
+        // Step 5: Check if destination table exists and handle accordingly
+        var tableExists = await TableExistsAsync(destConnection, request.DestinationTableName, cancellationToken);
+
+        // Begin transaction for rollback on failure
+        await using var transaction = (SqlTransaction)await destConnection.BeginTransactionAsync(cancellationToken);
+
+        try
+        {
+            if (!tableExists)
+            {
+                // Auto-create destination table from source schema
+                progress?.Report(new TransferProgress
+                {
+                    TotalRows = totalRows,
+                    StatusMessage = $"در حال ایجاد جدول '{request.DestinationTableName}'..."
+                });
+
+                var createTableSql = BuildCreateTableSql(request.DestinationTableName, schemaTable);
+                await using var createCmd = new SqlCommand(createTableSql, destConnection, transaction)
+                {
+                    CommandTimeout = 60
+                };
+                await createCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+            else if (request.TransferAction == DataTransferAction.Replace)
+            {
+                // Clear existing data
+                progress?.Report(new TransferProgress
+                {
+                    TotalRows = totalRows,
+                    StatusMessage = $"در حال حذف داده‌های قبلی از '{request.DestinationTableName}'..."
+                });
+
+                await using var deleteCmd = new SqlCommand(
+                    $"DELETE FROM [{request.DestinationTableName}]", destConnection, transaction)
+                {
+                    CommandTimeout = 120
+                };
+                await deleteCmd.ExecuteNonQueryAsync(cancellationToken);
+            }
+
+            // Step 6: Bulk copy data
+            progress?.Report(new TransferProgress
+            {
+                TotalRows = totalRows,
+                StatusMessage = "در حال انتقال داده‌ها..."
+            });
+
+            using var bulkCopy = new SqlBulkCopy(destConnection, SqlBulkCopyOptions.Default, transaction)
+            {
+                DestinationTableName = $"[{request.DestinationTableName}]",
+                BatchSize = 1000,
+                BulkCopyTimeout = 0,
+                NotifyAfter = totalRows > 100 ? (int)(totalRows / 100) : 1
+            };
+
+            long transferredRows = 0;
+            bulkCopy.SqlRowsCopied += (sender, e) =>
+            {
+                transferredRows = e.RowsCopied;
+                progress?.Report(new TransferProgress
+                {
+                    TotalRows = totalRows,
+                    TransferredRows = transferredRows,
+                    StatusMessage = $"در حال انتقال... {transferredRows} از {totalRows} رکورد"
+                });
+            };
+
+            await bulkCopy.WriteToServerAsync(sourceReader, cancellationToken);
+
+            // Commit transaction
+            await transaction.CommitAsync(cancellationToken);
+
+            progress?.Report(new TransferProgress
+            {
+                TotalRows = totalRows,
+                TransferredRows = totalRows,
+                IsComplete = true,
+                IsSuccess = true,
+                StatusMessage = $"انتقال با موفقیت انجام شد. {totalRows} رکورد منتقل شد."
+            });
+        }
+        catch (Exception ex)
+        {
+            // Rollback on failure
+            try
+            {
+                await transaction.RollbackAsync(cancellationToken);
+            }
+            catch
+            {
+                // Ignore rollback errors
+            }
+
+            progress?.Report(new TransferProgress
+            {
+                TotalRows = totalRows,
+                IsComplete = true,
+                IsSuccess = false,
+                ErrorMessage = ex.Message,
+                StatusMessage = $"انتقال ناموفق بود: {ex.Message}"
+            });
+
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Checks if a table exists in the destination database.
+    /// </summary>
+    private static async Task<bool> TableExistsAsync(
+        SqlConnection connection,
+        string tableName,
+        CancellationToken cancellationToken = default)
+    {
+        const string query = @"
+            SELECT COUNT(*) 
+            FROM INFORMATION_SCHEMA.TABLES 
+            WHERE TABLE_NAME = @TableName AND TABLE_TYPE = 'BASE TABLE'";
+
+        await using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@TableName", tableName);
+
+        var result = await command.ExecuteScalarAsync(cancellationToken);
+        return Convert.ToInt32(result) > 0;
+    }
+
+    /// <summary>
+    /// Builds a CREATE TABLE SQL statement from source column schema.
+    /// </summary>
+    private static string BuildCreateTableSql(
+        string tableName,
+        System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> columns)
+    {
+        var columnDefs = new List<string>();
+
+        foreach (var column in columns)
+        {
+            var colName = column.ColumnName;
+            var colType = MapToSqlType(column);
+            var nullable = (column.AllowDBNull ?? true) ? "NULL" : "NOT NULL";
+
+            columnDefs.Add($"[{colName}] {colType} {nullable}");
+        }
+
+        return $"CREATE TABLE [{tableName}] ({string.Join(", ", columnDefs)})";
+    }
+
+    /// <summary>
+    /// Maps a DbColumn to a SQL Server data type string.
+    /// </summary>
+    private static string MapToSqlType(System.Data.Common.DbColumn column)
+    {
+        var dataTypeName = column.DataTypeName ?? "NVARCHAR";
+        var size = column.ColumnSize ?? 0;
+
+        return dataTypeName.ToUpperInvariant() switch
+        {
+            "VARCHAR" or "CHAR" => size > 0 && size < 8000 ? $"{dataTypeName}({size})" : $"{dataTypeName}(MAX)",
+            "NVARCHAR" or "NCHAR" => size > 0 && size < 4000 ? $"{dataTypeName}({size})" : $"{dataTypeName}(MAX)",
+            "BINARY" or "VARBINARY" => size > 0 && size < 8000 ? $"{dataTypeName}({size})" : $"{dataTypeName}(MAX)",
+            "DECIMAL" or "NUMERIC" => $"{dataTypeName}({column.NumericPrecision ?? 18},{column.NumericScale ?? 0})",
+            "FLOAT" => $"FLOAT({column.NumericPrecision ?? 53})",
+            _ => dataTypeName
+        };
     }
 }

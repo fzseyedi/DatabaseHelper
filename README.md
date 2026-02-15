@@ -1,35 +1,52 @@
 ﻿# Database Backup Manager (پشتیبانی و بازیابی اطلاعات)
 
-A comprehensive WPF application for managing SQL Server databases with backup, restore, scheduling, and field management capabilities.
+A comprehensive WPF desktop application for managing SQL Server databases — backup, restore, scheduling, field management, and cross-server data transfer.
 
 ![.NET](https://img.shields.io/badge/.NET-10-blue)
-![Language](https://img.shields.io/badge/Language-C%23-purple)
+![Language](https://img.shields.io/badge/Language-C%23%2014-purple)
 ![UI](https://img.shields.io/badge/UI-WPF-blue)
+![Architecture](https://img.shields.io/badge/Architecture-MVVM-green)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-## 🎯 Features
+---
+
+## 📸 Overview
+
+**Database Backup Manager** is a Persian (RTL) WPF application designed for SQL Server database administrators and developers. It provides a unified interface for:
+
+- 🔗 Connecting to SQL Server instances
+- 💾 Backing up databases (Full / Differential / Transaction Log)
+- 📥 Restoring databases from backup files
+- 📅 Scheduling automated backups
+- 📋 Adding new columns to existing tables
+- 📤 Transferring data between SQL Server databases
+
+---
+
+## ✨ Features
 
 ### 🔗 Connection Management
-- Connect to SQL Server with Windows/SQL Authentication
-- Test connection before proceeding
-- Persistent connection settings with encryption
-- Automatic connection retry on startup
+- Windows & SQL Server authentication
+- Test connection before connecting
+- Persistent settings with DPAPI encryption
+- Connection status indicator (green/red dot)
+- Auto-load saved settings on startup
 
 ### 💾 Database Backup
-- **Full Backup** - Complete database backup
-- **Differential Backup** - Changes since last full backup
-- **Transaction Log Backup** - Point-in-time recovery
-- Backup compression support
-- Real-time progress reporting
-- Automatic backup path remembering
-- View last backup date for each database
+- **Full Backup** — Complete database backup
+- **Differential Backup** — Changes since last full backup
+- **Transaction Log Backup** — Point-in-time recovery support
+- Backup compression
+- Real-time progress bar
+- Persistent backup settings (path, compression, type)
+- View last backup date per database
 
 ### 📥 Database Restore
-- Restore from .bak or .trn files
+- Restore from `.bak` or `.trn` files
 - Custom data and log file paths
-- View backup file contents
+- View backup file contents before restoring
 - Progress tracking
-- Automatic database list refresh
+- Automatic database list refresh after restore
 
 ### 📅 Backup Scheduling
 - Daily, Weekly, Monthly schedules
@@ -38,260 +55,266 @@ A comprehensive WPF application for managing SQL Server databases with backup, r
 - Schedule management interface
 
 ### 📋 Field Manager (Add New Columns)
-- Add new columns to existing tables
-- Support for 31+ SQL Server data types
-- Configure column properties:
-  - Field name and data type
-  - Length (for VARCHAR, NVARCHAR, etc.)
-  - Precision & Scale (for DECIMAL, NUMERIC)
-  - NULL/NOT NULL constraints
-  - Primary Key designation
-  - Default values
-- Dynamic UI based on selected data type
-- Real-time table and column information
+- Add new columns to any existing table
+- 31+ SQL Server data types supported:
+  - **Numeric:** INT, BIGINT, SMALLINT, TINYINT, FLOAT, REAL, DECIMAL, NUMERIC, MONEY, SMALLMONEY
+  - **String:** VARCHAR, NVARCHAR, CHAR, NCHAR, TEXT, NTEXT
+  - **Date/Time:** DATE, TIME, DATETIME, DATETIME2, DATETIMEOFFSET, SMALLDATETIME
+  - **Binary:** BINARY, VARBINARY, IMAGE
+  - **Other:** BIT, UNIQUEIDENTIFIER, XML, JSON
+- Dynamic UI: Length/Precision/Scale fields appear based on selected data type
+- Configure constraints: NULL/NOT NULL, Primary Key, Default value
+- Real-time table information panel
+
+### 📤 Data Transfer (Cross-Server Copy)
+A powerful 3-step wizard for transferring data between SQL Server databases:
+
+**Step 1 — Destination Server Setup:**
+- Connect to any SQL Server (same or different machine)
+- Windows & SQL Server authentication
+- Test connection before proceeding
+- Encrypted settings persistence (DPAPI)
+
+**Step 2 — Source Data Selection:**
+- Select source database and table from connected server
+- Two transfer modes:
+  - **Table Mode** — Select from list of available tables
+  - **Query Mode** — Write custom SQL query
+- Preview first 10 rows before transfer
+- View total row count
+
+**Step 3 — Destination & Execute:**
+- Select destination database
+- Editable destination table name (defaults to source table name)
+- **Append** — Add to existing data
+- **Replace** — Delete existing data first (with warning ⚠️)
+- Auto-create destination table if it doesn't exist
+- Progress bar with row count
+- **Transaction rollback** on failure — no partial data
+- Uses SqlBulkCopy for efficient transfer
 
 ### 🌍 User Interface
 - **Right-to-Left (RTL)** Persian interface (فارسی)
-- Clean, professional MVVM design
-- Real-time status messages
+- Professional MVVM design with clean navigation
+- Step indicator for Data Transfer wizard (1→2→3)
+- Real-time status messages in Persian
 - Progress indicators for long operations
-- Responsive error handling
-- Help information panels
+- Comprehensive error handling with rollback
+- Help information panels on each view
 
 ### 💾 Settings Persistence
-- Connection settings encrypted with DPAPI
-- Backup settings saved (path, compression, type)
-- Automatic settings loading on startup
-- User-controlled persistence with checkboxes
+- Connection settings — encrypted with DPAPI
+- Backup settings — path, compression, type
+- Destination server settings — encrypted with DPAPI
+- Automatic loading on startup
+- User-controlled with checkboxes
 - Clear saved settings option
+
+---
 
 ## 🛠️ System Requirements
 
-- **OS:** Windows 10 or later
-- **.NET:** .NET 10
-- **SQL Server:** SQL Server 2016 or later
-- **RAM:** 2 GB minimum
-- **Display:** 1024x768 minimum resolution
+| Requirement | Minimum |
+|-------------|---------|
+| **OS** | Windows 10 or later |
+| **.NET** | .NET 10 SDK |
+| **SQL Server** | SQL Server 2016 or later |
+| **IDE** | Visual Studio 2022+ |
+| **RAM** | 2 GB |
+| **Display** | 1024×768 |
+
+---
 
 ## 📦 Installation
 
-### From GitHub
-
 ```bash
+# Clone the repository
 git clone https://github.com/fzseyedi/DatabaseHelper.git
+
+# Navigate to the project
 cd DatabaseHelper
+
+# Build the project
 dotnet build
-dotnet run
+
+# Run the application
+dotnet run --project DatabaseBackupManager
 ```
 
-### Requirements
+Or open `DatabaseBackupManager.sln` in Visual Studio and press `F5`.
 
-- Visual Studio 2022 or later
-- .NET 10 SDK
-- SQL Server 2016+
+---
 
 ## 🚀 Getting Started
 
-### 1. Initial Setup
-
+### 1. Connect to SQL Server
 1. Launch the application
-2. Click **🔗 ارتباط با سرور** (Connection) tab
-3. Enter SQL Server details:
-   - Server name (e.g., `localhost\SQLEXPRESS`)
-   - Authentication type (Windows/SQL)
-   - Optional: Username/Password
-   - Connection timeout
-   - Trust server certificate option
+2. Enter server name (e.g., `localhost\SQLEXPRESS`)
+3. Select authentication type
 4. Click **تست اتصال** (Test Connection)
 5. Click **اتصال** (Connect)
 
-### 2. Backup Database
+### 2. Backup a Database
+1. Click **💾 پشتیبانی** tab
+2. Select database → Choose backup type → Set path
+3. Click **▶ شروع پشتیبان‌گیری** (Start Backup)
 
-1. Click **💾 پشتیبانی** (Backup) tab
-2. Select database and table
-3. Choose backup type:
-   - Full
-   - Differential  
-   - Transaction Log
-4. Set backup path
-5. Enable compression if desired
-6. Check **یادآوری تنظیمات** (Remember settings)
-7. Click **▶ شروع پشتیبان‌گیری** (Start Backup)
+### 3. Restore a Database
+1. Click **📥 بازیابی** tab
+2. Select database → Browse backup file
+3. Click **▶ بازیابی اطلاعات** (Start Restore)
 
-### 3. Restore Database
-
-1. Click **📥 بازیابی** (Restore) tab
-2. Select database
-3. Choose backup file
-4. Optionally specify data/log file paths
-5. Click **▶ بازیابی اطلاعات** (Restore)
-
-### 4. Schedule Backup
-
-1. Click **📅 زمانبندی** (Schedule) tab
-2. Select database
-3. Choose schedule frequency
-4. Set backup location
-5. Click **💾 ذخیره** (Save)
-
-### 5. Add New Column
-
-1. Click **📋 افزودن فیلد جدید** (Add Field) tab
-2. Select database → Table
-3. Enter field configuration:
-   - Field name
-   - Data type
-   - Length/Precision/Scale (if applicable)
-   - Constraints
+### 4. Add a New Column
+1. Click **📋 افزودن فیلد جدید** tab
+2. Select database → Select table
+3. Enter field name, data type, constraints
 4. Click **✓ افزودن فیلد** (Add Field)
+
+### 5. Transfer Data Between Servers
+1. Click **📤 انتقال داده** tab
+2. **Step 1:** Enter destination server details → Connect
+3. **Step 2:** Select source database → Choose table or write query → Preview data
+4. **Step 3:** Select destination database → Set table name → Choose Append/Replace → Execute
+
+---
 
 ## 🏗️ Architecture
 
 ### MVVM Pattern
-```
-Views (XAML)
-    ↓
-ViewModels (Logic)
-    ↓
-Services (Data Access)
-    ↓
-Models (Data)
-```
 
-### Key Components
-
-| Component | Purpose |
-|-----------|---------|
-| **ISqlServerService** | SQL Server database operations |
-| **ConnectionSettingsManager** | Persistent connection settings |
-| **BackupSettingsManager** | Persistent backup settings |
-| **ViewModelBase** | Base ViewModel with MVVM support |
-| **RelayCommand** | Command implementation for buttons |
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│   Views (XAML)   │────▶│   ViewModels     │────▶│   Services       │
+│                  │     │   (Logic)        │     │   (Data Access)  │
+│ - ConnectionView │     │ - ConnectionVM   │     │ - ISqlServerSvc  │
+│ - BackupView     │     │ - BackupVM       │     │ - SqlServerSvc   │
+│ - RestoreView    │     │ - RestoreVM      │     │ - SettingsManager│
+│ - ScheduleView   │     │ - ScheduleVM     │     │                  │
+│ - FieldMgrView   │     │ - FieldMgrVM     │     ├──────────────────┤
+│ - DataTransView  │     │ - DataTransVM    │     │   Models         │
+└──────────────────┘     └──────────────────┘     │ - ConnectionSettings
+                                                  │ - DatabaseInfo   │
+                                                  │ - TableInfo      │
+                                                  │ - SqlDataType    │
+                                                  │ - DataTransReq   │
+                                                  │ - TransferProgress
+                                                  └──────────────────┘
+```
 
 ### Project Structure
 
 ```
 DatabaseBackupManager/
 ├── Models/
-│   ├── ConnectionSettings.cs
-│   ├── DatabaseInfo.cs
-│   ├── BackupSchedule.cs
-│   ├── TableInfo.cs
-│   └── SqlDataType.cs
+│   ├── ConnectionSettings.cs        # Source server connection
+│   ├── DatabaseInfo.cs              # Database metadata
+│   ├── BackupSchedule.cs            # Schedule configuration
+│   ├── TableInfo.cs                 # Table metadata
+│   ├── SqlDataType.cs               # SQL Server data types
+│   ├── DestinationServerSettings.cs # Destination server connection
+│   ├── DataTransferRequest.cs       # Transfer configuration
+│   └── TransferProgress.cs          # Transfer progress tracking
 ├── Services/
-│   ├── ISqlServerService.cs
-│   ├── SqlServerService.cs
-│   ├── ConnectionSettingsManager.cs
-│   └── BackupSettingsManager.cs
+│   ├── ISqlServerService.cs         # Service interface
+│   ├── SqlServerService.cs          # SQL Server operations
+│   ├── ConnectionSettingsManager.cs # Encrypted source settings
+│   ├── BackupSettingsManager.cs     # Backup preferences
+│   └── DestinationSettingsManager.cs# Encrypted destination settings
 ├── ViewModels/
-│   ├── MainViewModel.cs
-│   ├── ConnectionViewModel.cs
-│   ├── BackupViewModel.cs
-│   ├── RestoreViewModel.cs
-│   ├── ScheduleViewModel.cs
-│   └── FieldManagerViewModel.cs
+│   ├── ViewModelBase.cs             # Base class (INotifyPropertyChanged)
+│   ├── MainViewModel.cs             # Navigation & orchestration
+│   ├── ConnectionViewModel.cs       # Connection management
+│   ├── BackupViewModel.cs           # Backup operations
+│   ├── RestoreViewModel.cs          # Restore operations
+│   ├── ScheduleViewModel.cs         # Scheduling
+│   ├── FieldManagerViewModel.cs     # Column management
+│   └── DataTransferViewModel.cs     # 3-step data transfer wizard
 ├── Views/
-│   ├── MainWindow.xaml
-│   ├── ConnectionView.xaml
-│   ├── BackupView.xaml
-│   ├── RestoreView.xaml
-│   ├── ScheduleView.xaml
-│   └── FieldManagerView.xaml
-└── Helpers/
-    └── ObservableObject.cs
+│   ├── ConnectionView.xaml          # Connection UI
+│   ├── BackupView.xaml              # Backup UI
+│   ├── RestoreView.xaml             # Restore UI
+│   ├── ScheduleView.xaml            # Schedule UI
+│   ├── FieldManagerView.xaml        # Field manager UI
+│   └── DataTransferView.xaml        # Data transfer wizard UI
+├── Commands/
+│   └── RelayCommand.cs              # ICommand implementation
+├── Helpers/
+│   └── ObservableObject.cs          # Property change notification
+├── MainWindow.xaml                  # Main window with navigation
+└── App.xaml                         # Application entry point
 ```
 
-## 🔐 Security Features
+---
 
-- **Password Encryption:** DPAPI (Data Protection API) for sensitive data
-- **Connection String Security:** Encrypted in local storage
-- **No Cloud Storage:** All data remains local
-- **User-Scoped:** Settings encrypted per Windows user
-- **SQL Injection Prevention:** Parameterized queries
+## 🔐 Security
 
-## 🎨 Supported Data Types
+- **DPAPI Encryption** — All passwords encrypted using Windows Data Protection API
+- **User-Scoped** — Settings encrypted per Windows user account
+- **Local Storage** — No cloud storage; all data stays on machine
+- **Parameterized Queries** — SQL injection prevention
+- **Transaction Rollback** — Data integrity on transfer failure
 
-The Field Manager supports all major SQL Server data types:
+### Settings Storage Location
+```
+%LOCALAPPDATA%\DatabaseBackupManager\
+├── connection-settings.json      # Encrypted source server settings
+├── destination-settings.json     # Encrypted destination server settings
+└── backup-settings.json          # Backup preferences
+```
 
-### Numeric Types
-- INT, BIGINT, SMALLINT, TINYINT
-- FLOAT, REAL
-- DECIMAL, NUMERIC (with Precision/Scale)
-- MONEY, SMALLMONEY
+---
 
-### String Types
-- VARCHAR, NVARCHAR, CHAR, NCHAR (with Length)
-- TEXT, NTEXT
+## 📋 Data Transfer — Technical Details
 
-### Date/Time Types
-- DATE, TIME, DATETIME, DATETIME2, DATETIMEOFFSET, SMALLDATETIME
+The Data Transfer feature uses `SqlBulkCopy` for high-performance data movement:
 
-### Binary Types
-- BINARY, VARBINARY, IMAGE (with optional Length)
+| Feature | Implementation |
+|---------|---------------|
+| **Bulk Copy** | SqlBulkCopy with batch size 1000 |
+| **Progress** | NotifyAfter for real-time row count |
+| **Schema** | Auto-detect from source and create destination table |
+| **Validation** | INFORMATION_SCHEMA queries |
+| **Rollback** | SQL Transaction wraps entire operation |
+| **Replace Mode** | DELETE + INSERT within same transaction |
+| **Type Mapping** | Automatic SQL type mapping with precision/scale |
 
-### Other Types
-- BIT, UNIQUEIDENTIFIER, XML, JSON
+### Transfer Flow
+```
+Source Server                          Destination Server
+┌──────────────┐                      ┌──────────────┐
+│ SELECT * FROM│──── SqlBulkCopy ────▶│ INSERT INTO  │
+│ [SourceTable]│     (batched)        │ [DestTable]  │
+└──────────────┘                      └──────────────┘
+       │                                      │
+       └──── Transaction (Commit/Rollback) ───┘
+```
 
-## 🌐 Localization
-
-- **Primary Language:** Persian (فارسی) - RTL Interface
-- **RTL Support:** Full right-to-left layout
-- **Status Messages:** All in Persian
-- **Help Text:** Comprehensive Persian documentation
+---
 
 ## 📋 NuGet Dependencies
 
-- `Microsoft.Data.SqlClient` - SQL Server connectivity
-- `Microsoft.Extensions.DependencyInjection` - Dependency injection
+| Package | Purpose |
+|---------|---------|
+| `Microsoft.Data.SqlClient` | SQL Server connectivity |
+| `Microsoft.Extensions.DependencyInjection` | Dependency injection |
+| `System.Security.Cryptography.ProtectedData` | DPAPI encryption |
 
-## 🐛 Known Limitations
-
-- Only supports SQL Server 2016 and later
-- Backup/Restore operations require SQL Server native tools
-- Schedule functionality requires app to be running
-- Primary Key on new columns requires table recreation
+---
 
 ## 🚧 Future Enhancements
 
 - [ ] English language support
-- [ ] Schedule service for background execution
+- [ ] Background Windows Service for scheduled backups
+- [ ] Multi-table transfer in single operation
 - [ ] Query builder for complex operations
 - [ ] Database comparison tools
 - [ ] Performance analysis dashboard
-- [ ] Export/Import functionality
+- [ ] Export/Import to CSV/Excel
 - [ ] Multi-server management
-- [ ] Backup history tracking
+- [ ] Backup history tracking & reports
+- [ ] Dark theme support
 
-## 📝 Usage Examples
-
-### Backup with Compression
-```
-1. Select Database → MyDatabase
-2. Choose Backup Type → Full
-3. Set Path → C:\Backups\
-4. Enable Compression ✓
-5. Click Start Backup
-```
-
-### Restore to Point in Time
-```
-1. Select Database → MyDatabase
-2. Choose Backup File → MyDatabase_Full_20240115_143022.bak
-3. Click Restore
-4. Monitor progress
-```
-
-### Add DECIMAL Column
-```
-1. Select Database → MyDatabase
-2. Select Table → Sales
-3. Field Name → UnitPrice
-4. Data Type → DECIMAL
-5. Precision → 18
-6. Scale → 2
-7. Allow NULL ✓
-8. Click Add Field
-```
+---
 
 ## 🤝 Contributing
 
@@ -303,37 +326,29 @@ Contributions are welcome! Please:
 4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+---
+
 ## 📜 License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
+---
 
 ## 👤 Author
 
 **Farzin Seyedi**
-- GitHub: [@fzseyedi](https://github.com/fzseyedi)
-- Email: [Contact via GitHub]
 
-## 🙏 Acknowledgments
+[![GitHub](https://img.shields.io/badge/GitHub-fzseyedi-181717?logo=github)](https://github.com/fzseyedi)
 
-- Microsoft SQL Server documentation
-- WPF MVVM best practices community
-- .NET 10 framework team
+---
 
-## 📞 Support
-
-For issues, questions, or suggestions:
-- Open an issue on GitHub
-- Include error messages and steps to reproduce
-- Provide screenshot if applicable
-
-## 📚 Additional Resources
+## 📚 Resources
 
 - [SQL Server Documentation](https://learn.microsoft.com/en-us/sql/sql-server/)
 - [WPF Documentation](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)
 - [MVVM Pattern](https://learn.microsoft.com/en-us/dotnet/architecture/maui/mvvm)
+- [SqlBulkCopy Class](https://learn.microsoft.com/en-us/dotnet/api/microsoft.data.sqlclient.sqlbulkcopy)
 
 ---
 
-**Last Updated:** 2024
-**Version:** 1.0.0
-**Status:** Active Development ✅
+**Version:** 1.1.0 · **Status:** Active Development ✅ · **Last Updated:** 2025

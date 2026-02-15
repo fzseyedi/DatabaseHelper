@@ -120,6 +120,75 @@ public interface ISqlServerService
         bool isPrimaryKey = false,
         string? defaultValue = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tests the connection to a destination SQL Server.
+    /// </summary>
+    /// <param name="destinationSettings">The destination server connection settings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>True if connection is successful, false otherwise.</returns>
+    Task<bool> TestDestinationConnectionAsync(
+        DestinationServerSettings destinationSettings,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a list of all databases on the destination server.
+    /// </summary>
+    /// <param name="destinationSettings">The destination server connection settings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of database information.</returns>
+    Task<IList<DatabaseInfo>> GetDestinationDatabasesAsync(
+        DestinationServerSettings destinationSettings,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the row count from a source table or query.
+    /// </summary>
+    /// <param name="sourceSettings">The source server connection settings.</param>
+    /// <param name="databaseName">The source database name.</param>
+    /// <param name="tableNameOrQuery">Table name or SQL query.</param>
+    /// <param name="isQuery">Whether tableNameOrQuery is a SQL query.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The row count.</returns>
+    Task<long> GetRowCountAsync(
+        ConnectionSettings sourceSettings,
+        string databaseName,
+        string tableNameOrQuery,
+        bool isQuery = false,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a preview of data from a source table or query (first N rows).
+    /// </summary>
+    /// <param name="sourceSettings">The source server connection settings.</param>
+    /// <param name="databaseName">The source database name.</param>
+    /// <param name="tableNameOrQuery">Table name or SQL query.</param>
+    /// <param name="isQuery">Whether tableNameOrQuery is a SQL query.</param>
+    /// <param name="maxRows">Maximum number of rows to preview.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A DataTable with the preview data.</returns>
+    Task<System.Data.DataTable> GetDataPreviewAsync(
+        ConnectionSettings sourceSettings,
+        string databaseName,
+        string tableNameOrQuery,
+        bool isQuery = false,
+        int maxRows = 10,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Transfers data from source to destination with schema validation, auto-create table, and transaction rollback.
+    /// </summary>
+    /// <param name="sourceSettings">The source server connection settings.</param>
+    /// <param name="destinationSettings">The destination server connection settings.</param>
+    /// <param name="request">The data transfer request configuration.</param>
+    /// <param name="progress">Progress reporter for transfer progress.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task TransferDataAsync(
+        ConnectionSettings sourceSettings,
+        DestinationServerSettings destinationSettings,
+        DataTransferRequest request,
+        IProgress<TransferProgress>? progress = null,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>

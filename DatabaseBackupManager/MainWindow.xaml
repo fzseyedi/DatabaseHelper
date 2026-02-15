@@ -32,6 +32,9 @@ WindowStartupLocation="CenterScreen">
         <DataTemplate DataType="{x:Type vm:FieldManagerViewModel}">
             <views:FieldManagerView />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:DataTransferViewModel}">
+            <views:DataTransferView />
+        </DataTemplate>
 
         <!-- Navigation Button Style -->
         <Style x:Key="NavButtonStyle" TargetType="Button">
@@ -114,6 +117,9 @@ WindowStartupLocation="CenterScreen">
                                 Style="{StaticResource NavButtonStyle}"/>
                         <Button Content="📋 افزودن فیلد جدید" 
                                 Command="{Binding NavigateToFieldManagerCommand}"
+                                Style="{StaticResource NavButtonStyle}"/>
+                        <Button Content="📤 انتقال داده" 
+                                Command="{Binding NavigateToDataTransferCommand}"
                                 Style="{StaticResource NavButtonStyle}"/>
                     </StackPanel>
                 </Border>
