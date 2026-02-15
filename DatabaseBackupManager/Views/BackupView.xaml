@@ -1,0 +1,238 @@
+﻿<UserControl x:Class="DatabaseBackupManager.Views.BackupView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DatabaseBackupManager.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="500" d:DesignWidth="700">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" 
+                   Text="پشتیبانی از پایگاه داده" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,20"/>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="450"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Backup Settings -->
+            <Border Grid.Column="0" 
+                    Background="White" 
+                    CornerRadius="8" 
+                    Padding="20"
+                    Margin="0,0,10,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                </Border.Effect>
+
+                <StackPanel>
+                    <TextBlock Text="تنظیمات پشتیبان‌گیری" 
+                               FontSize="16" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,15"/>
+
+                    <!-- Database Selection -->
+                    <TextBlock Text="انتخاب پایگاه داده:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding Databases}"
+                              SelectedItem="{Binding SelectedDatabase}"
+                              DisplayMemberPath="Name"
+                              Padding="8"
+                              Margin="0,0,0,15"/>
+
+                    <!-- Backup Type -->
+                    <TextBlock Text="نوع پشتیبان‌گیری:" Margin="0,0,0,5"/>
+                    <ComboBox ItemsSource="{Binding BackupTypes}"
+                              SelectedItem="{Binding SelectedBackupType}"
+                              Padding="8"
+                              Margin="0,0,0,15"/>
+
+                    <!-- Backup Path -->
+                    <TextBlock Text="مسیر پشتیبان‌گیری:" Margin="0,0,0,5"/>
+                    <Grid Margin="0,0,0,15">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" 
+                                 Text="{Binding BackupPath, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="8"/>
+                        <Button Grid.Column="1" 
+                                Content="📁" 
+                                Command="{Binding BrowseBackupPathCommand}"
+                                Padding="10,8"
+                                Margin="5,0,0,0"
+                                Background="#FF3498DB"
+                                Foreground="White"
+                                BorderThickness="0"/>
+                    </Grid>
+
+                    <!-- Compress Backup -->
+                    <CheckBox Content="فشرده‌سازی پشتیبان" 
+                              IsChecked="{Binding CompressBackup}"
+                              Margin="0,0,0,10"/>
+
+                    <!-- Remember Settings -->
+                    <CheckBox Content="یادآوری تنظیمات برای دفعه بعد" 
+                              IsChecked="{Binding RememberSettings}"
+                              Margin="0,0,0,20"/>
+
+                    <!-- Action Buttons -->
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="▶ شروع پشتیبان‌گیری" 
+                                Command="{Binding BackupCommand}"
+                                Padding="15,10"
+                                Margin="0,0,10,0"
+                                Background="#FF27AE60"
+                                Foreground="White"
+                                FontWeight="Bold"
+                                BorderThickness="0"/>
+
+                        <Button Content="⏹ لغو" 
+                                Command="{Binding CancelBackupCommand}"
+                                Padding="15,10"
+                                Margin="0,0,10,0"
+                                Background="#FFE74C3C"
+                                Foreground="White"
+                                BorderThickness="0"/>
+
+                        <Button Content="پاک کردن تنظیمات" 
+                                Command="{Binding ClearSettingsCommand}"
+                                Padding="15,10"
+                                Background="#FF95A5A6"
+                                Foreground="White"
+                                BorderThickness="0"/>
+                    </StackPanel>
+
+                    <!-- Progress Section -->
+                    <StackPanel Margin="0,20,0,0" 
+                                Visibility="{Binding IsBackupInProgress, Converter={StaticResource BoolToVisConverter}}">
+                        <TextBlock Text="پیشرفت پشتیبان‌گیری:" Margin="0,0,0,5"/>
+                        <ProgressBar Value="{Binding Progress}" 
+                                     Minimum="0" 
+                                     Maximum="100" 
+                                     Height="25"
+                                     Foreground="#FF27AE60"/>
+                        <TextBlock Text="{Binding Progress, StringFormat={}{0}%}" 
+                                   HorizontalAlignment="Center" 
+                                   Margin="0,5,0,0"
+                                   FontWeight="Bold"/>
+                    </StackPanel>
+
+                    <!-- Refresh Button -->
+                    <Button Content="🔄 بارگذاری مجدد پایگاه‌های داده" 
+                            Command="{Binding RefreshDatabasesCommand}"
+                            HorizontalAlignment="Left"
+                            Padding="10,5"
+                            Margin="0,20,0,0"
+                            Background="#FF9B59B6"
+                            Foreground="White"
+                            BorderThickness="0"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Database Info Panel -->
+            <Border Grid.Column="1" 
+                    Background="White" 
+                    CornerRadius="8" 
+                    Padding="20"
+                    Margin="10,0,0,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" 
+                               Text="اطلاعات پایگاه داده" 
+                               FontSize="16" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,15"/>
+
+                    <!-- Selected Database Info -->
+                    <StackPanel Grid.Row="1">
+                        <Border Background="#FFECF0F1" 
+                                CornerRadius="5" 
+                                Padding="15"
+                                Margin="0,0,0,10">
+                            <StackPanel>
+                                <TextBlock Text="پایگاه داده انتخاب شده" 
+                                           FontWeight="SemiBold" 
+                                           Margin="0,0,0,10"/>
+
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <TextBlock Grid.Row="0" Grid.Column="0" Text="نام:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedDatabase.Name, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                    <TextBlock Grid.Row="1" Grid.Column="0" Text="حجم:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                    <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedDatabase.SizeFormatted, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                    <TextBlock Grid.Row="2" Grid.Column="0" Text="وضعیت:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedDatabase.Status, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                    <TextBlock Grid.Row="3" Grid.Column="0" Text="مدل بازیابی:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                    <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding SelectedDatabase.RecoveryModel, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                    <TextBlock Grid.Row="4" Grid.Column="0" Text="آخرین پشتیبان‌گیری:" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                                    <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding SelectedDatabase.LastBackupDate, StringFormat={}{0:yyyy-MM-dd HH:mm}, FallbackValue='هرگز'}" Margin="0,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Backup Type Info -->
+                        <Border Background="#FFF8F9FA" 
+                                CornerRadius="5" 
+                                Padding="15">
+                            <StackPanel>
+                                <TextBlock Text="ℹ️ انواع پشتیبان‌گیری" 
+                                           FontWeight="SemiBold" 
+                                           Margin="0,0,0,10"/>
+                                <TextBlock TextWrapping="Wrap" FontSize="12">
+                                    <Run FontWeight="SemiBold">Full:</Run>
+                                    <Run>پشتیبان‌گیری کامل از پایگاه داده</Run>
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Differential:</Run>
+                                    <Run>تغییرات از آخرین پشتیبان‌گیری کامل</Run>
+                                    <LineBreak/>
+                                    <Run FontWeight="SemiBold">Transaction Log:</Run>
+                                    <Run>پشتیبان‌گیری از لاگ‌های تراکنش (نیاز به مدل بازیابی کامل دارد)</Run>
+                                </TextBlock>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

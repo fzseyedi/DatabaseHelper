@@ -1,0 +1,260 @@
+﻿<UserControl x:Class="DatabaseBackupManager.Views.FieldManagerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:DatabaseBackupManager.Views"
+             mc:Ignorable="d" 
+             d:DesignHeight="600" 
+             d:DesignWidth="800">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock Grid.Row="0" 
+                   Text="افزودن فیلد جدید به جدول" 
+                   FontSize="24" 
+                   FontWeight="Bold" 
+                   Margin="0,0,0,20"/>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="500"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Field Configuration Form -->
+            <Border Grid.Column="0" 
+                    Background="White" 
+                    CornerRadius="8" 
+                    Padding="20"
+                    Margin="0,0,10,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                </Border.Effect>
+
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <!-- Database Selection -->
+                        <TextBlock Text="تنظیمات فیلد جدید" 
+                                   FontSize="16" 
+                                   FontWeight="SemiBold" 
+                                   Margin="0,0,0,15"/>
+
+                        <TextBlock Text="انتخاب پایگاه داده:" Margin="0,0,0,5"/>
+                        <ComboBox ItemsSource="{Binding Databases}"
+                                  SelectedItem="{Binding SelectedDatabase}"
+                                  DisplayMemberPath="Name"
+                                  Padding="8"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Table Selection -->
+                        <TextBlock Text="انتخاب جدول:" Margin="0,0,0,5"/>
+                        <ComboBox ItemsSource="{Binding Tables}"
+                                  SelectedItem="{Binding SelectedTable}"
+                                  DisplayMemberPath="Name"
+                                  Padding="8"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Field Name -->
+                        <TextBlock Text="نام فیلد:" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding FieldName, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="8"
+                                 Margin="0,0,0,15"
+                                 FlowDirection="LeftToRight"/>
+
+                        <!-- Data Type -->
+                        <TextBlock Text="نوع داده:" Margin="0,0,0,5"/>
+                        <ComboBox ItemsSource="{Binding DataTypes}"
+                                  SelectedItem="{Binding SelectedDataType}"
+                                  DisplayMemberPath="Name"
+                                  Padding="8"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Length (conditional) -->
+                        <StackPanel Margin="0,0,0,15">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsLengthRequired}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="طول:" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding FieldLength, UpdateSourceTrigger=PropertyChanged}" 
+                                     Padding="8"
+                                     FlowDirection="LeftToRight"/>
+                        </StackPanel>
+
+                        <!-- Precision (conditional) -->
+                        <StackPanel Margin="0,0,0,15">
+                            <StackPanel.Style>
+                                <Style TargetType="StackPanel">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsPrecisionRequired}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </StackPanel.Style>
+                            <TextBlock Text="دقت (Precision) - تعداد کل ارقام:" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding FieldPrecision, UpdateSourceTrigger=PropertyChanged}" 
+                                     Padding="8"
+                                     FlowDirection="LeftToRight"
+                                     Margin="0,0,0,10"/>
+
+                            <TextBlock Text="مقیاس (Scale) - ارقام بعد از اعشار:" Margin="0,0,0,5"/>
+                            <TextBox Text="{Binding FieldScale, UpdateSourceTrigger=PropertyChanged}" 
+                                     Padding="8"
+                                     FlowDirection="LeftToRight"/>
+                        </StackPanel>
+
+                        <!-- Nullable -->
+                        <CheckBox Content="اجازه مقادیر NULL" 
+                                  IsChecked="{Binding IsNullable}"
+                                  Margin="0,0,0,10"/>
+
+                        <!-- Primary Key -->
+                        <CheckBox Content="کلید اولیه (Primary Key)" 
+                                  IsChecked="{Binding IsPrimaryKey}"
+                                  Margin="0,0,0,15"/>
+
+                        <!-- Default Value -->
+                        <TextBlock Text="مقدار پیش‌فرض:" Margin="0,0,0,5"/>
+                        <TextBox Text="{Binding DefaultValue, UpdateSourceTrigger=PropertyChanged}" 
+                                 Padding="8"
+                                 Margin="0,0,0,20"
+                                 FlowDirection="LeftToRight"/>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="✓ افزودن فیلد" 
+                                    Command="{Binding AddFieldCommand}"
+                                    Padding="15,10"
+                                    Margin="0,0,10,0"
+                                    Background="#FF27AE60"
+                                    Foreground="White"
+                                    FontWeight="Bold"
+                                    BorderThickness="0"/>
+
+                            <Button Content="✗ پاک کردن" 
+                                    Command="{Binding ClearFormCommand}"
+                                    Padding="15,10"
+                                    Background="#FF95A5A6"
+                                    Foreground="White"
+                                    BorderThickness="0"/>
+                        </StackPanel>
+
+                        <!-- Progress Indicator -->
+                        <StackPanel Orientation="Horizontal" 
+                                    Margin="0,20,0,0"
+                                    Visibility="{Binding IsAddingField, Converter={StaticResource BoolToVisConverter}}">
+                            <TextBlock Text="⏳ " FontSize="14"/>
+                            <TextBlock Text="درحال پردازش..." FontStyle="Italic"/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <!-- Information Panel -->
+            <Border Grid.Column="1" 
+                    Background="White" 
+                    CornerRadius="8" 
+                    Padding="20"
+                    Margin="10,0,0,0">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.1"/>
+                </Border.Effect>
+
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" 
+                               Text="اطلاعات جدول" 
+                               FontSize="16" 
+                               FontWeight="SemiBold" 
+                               Margin="0,0,0,15"/>
+
+                    <!-- Selected Table Info -->
+                    <Border Grid.Row="1"
+                            Background="#FFECF0F1" 
+                            CornerRadius="5" 
+                            Padding="15"
+                            Margin="0,0,0,15">
+                        <StackPanel>
+                            <TextBlock Text="جدول انتخاب شده" 
+                                       FontWeight="SemiBold" 
+                                       Margin="0,0,0,10"/>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="نام:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SelectedTable.Name, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="طرح:" FontWeight="SemiBold" Margin="0,0,10,5"/>
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SelectedTable.Schema, FallbackValue='-'}" Margin="0,0,0,5"/>
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="تعداد ستون‌ها:" FontWeight="SemiBold" Margin="0,0,10,0"/>
+                                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding SelectedTable.ColumnCount, FallbackValue='0'}" Margin="0,0,0,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Help Info -->
+                    <Border Grid.Row="2"
+                            Background="#FFF8F9FA" 
+                            CornerRadius="5" 
+                            Padding="15">
+                        <StackPanel>
+                            <TextBlock Text="ℹ️ راهنمایی" 
+                                       FontWeight="SemiBold" 
+                                       Margin="0,0,0,10"/>
+                            <TextBlock TextWrapping="Wrap" FontSize="12">
+                                <Run FontWeight="SemiBold">مراحل:</Run>
+                                <LineBreak/>
+                                <Run>1. پایگاه داده را انتخاب کنید</Run>
+                                <LineBreak/>
+                                <Run>2. جدول را انتخاب کنید</Run>
+                                <LineBreak/>
+                                <Run>3. نام فیلد و نوع داده را وارد کنید</Run>
+                                <LineBreak/>
+                                <Run>4. تنظیمات اضافی را تعیین کنید (اختیاری)</Run>
+                                <LineBreak/>
+                                <Run>5. بر دکمه "افزودن فیلد" کلیک کنید</Run>
+                                <LineBreak/>
+                                <Run FontWeight="SemiBold">نکته:</Run>
+                                <Run>برخی از انواع داده نیاز به طول یا دقت دارند</Run>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
