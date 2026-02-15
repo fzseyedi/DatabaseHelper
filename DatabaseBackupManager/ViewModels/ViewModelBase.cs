@@ -1,4 +1,5 @@
-﻿using DatabaseBackupManager.Helpers;
+﻿using System.Windows.Input;
+using DatabaseBackupManager.Helpers;
 
 namespace DatabaseBackupManager.ViewModels;
 
@@ -19,7 +20,13 @@ public abstract class ViewModelBase : ObservableObject
     public bool IsBusy
     {
         get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
     }
 
     /// <summary>

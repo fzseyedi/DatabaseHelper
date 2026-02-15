@@ -36,6 +36,7 @@ public class DataTransferViewModel : ViewModelBase
     private DatabaseInfo? _selectedDestinationDatabase;
     private string _destinationTableName = string.Empty;
     private DataTransferAction _transferAction = DataTransferAction.Append;
+    private bool _enableIdentityInsert = false;
     private DataTable? _previewData;
     private long _sourceRowCount;
 
@@ -284,6 +285,15 @@ public class DataTransferViewModel : ViewModelBase
     }
 
     /// <summary>
+    /// Gets or sets whether to enable identity insert for identity columns.
+    /// </summary>
+    public bool EnableIdentityInsert
+    {
+        get => _enableIdentityInsert;
+        set => SetProperty(ref _enableIdentityInsert, value);
+    }
+
+    /// <summary>
     /// Gets or sets the preview data table.
     /// </summary>
     public DataTable? PreviewData
@@ -311,7 +321,13 @@ public class DataTransferViewModel : ViewModelBase
     public bool IsTransferring
     {
         get => _isTransferring;
-        private set => SetProperty(ref _isTransferring, value);
+        private set
+        {
+            if (SetProperty(ref _isTransferring, value))
+            {
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
     }
 
     /// <summary>
@@ -633,6 +649,12 @@ public class DataTransferViewModel : ViewModelBase
     {
         if (SelectedSourceDatabase == null || SelectedDestinationDatabase == null) return;
 
+        // Warn user about potential identity conflicts
+        if (!EnableIdentityInsert && IsReplaceMode)
+        {
+            StatusMessage = "⚠️ هشدار: حالت Identity Insert غیر‌فعال است. در صورت وجود مقادیر شناسه تکراری خطایی رخ میدهد.";
+        }
+
         IsTransferring = true;
         IsBusy = true;
         ProgressPercentage = 0;
@@ -651,7 +673,8 @@ public class DataTransferViewModel : ViewModelBase
                 CustomQuery = CustomQuery,
                 DestinationTableName = DestinationTableName,
                 DestinationDatabaseName = SelectedDestinationDatabase.Name,
-                TransferAction = TransferAction
+                TransferAction = TransferAction,
+                EnableIdentityInsert = EnableIdentityInsert
             };
 
             var progress = new Progress<TransferProgress>(p =>

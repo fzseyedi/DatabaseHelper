@@ -360,7 +360,12 @@
                                  Margin="0,0,0,5" GroupName="TransferAction"/>
                     <RadioButton Content="جایگزینی داده‌های قبلی (Replace)" 
                                  IsChecked="{Binding IsReplaceMode}"
-                                 Margin="0,0,0,20" GroupName="TransferAction"/>
+                                 Margin="0,0,0,15" GroupName="TransferAction"/>
+
+                    <!-- Enable Identity Insert -->
+                    <CheckBox Content="فعال‌سازی درج مقادیر شناسه" 
+                              IsChecked="{Binding EnableIdentityInsert}"
+                              Margin="0,0,0,20"/>
 
                     <!-- Execute Buttons -->
                     <StackPanel Orientation="Horizontal">
@@ -455,6 +460,9 @@
                             <Run>اگر جدول مقصد وجود نداشته باشد، به صورت خودکار ایجاد می‌شود.</Run>
                             <LineBreak/>
                             <Run>در صورت بروز خطا، تمام تغییرات بازگردانی (Rollback) می‌شوند.</Run>
+                            <LineBreak/>
+                            <Run FontWeight="SemiBold">Identity Insert:</Run>
+                            <Run>اگر ستون شناسه دارای مقادیر مخصوصی هستند که می‌خواهید منتقل کنید، "درج مقادیر شناسه" را فعال کنید.</Run>
                         </TextBlock>
                     </StackPanel>
                 </Border>

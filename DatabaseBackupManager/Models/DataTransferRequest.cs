@@ -39,6 +39,11 @@ public class DataTransferRequest
     /// Gets or sets the destination database name.
     /// </summary>
     public string DestinationDatabaseName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets whether to enable identity insert for identity columns.
+    /// </summary>
+    public bool EnableIdentityInsert { get; set; } = false;
 }
 
 /// <summary>

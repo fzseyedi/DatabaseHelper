@@ -575,10 +575,18 @@ public class SqlServerService : ISqlServerService
             StatusMessage = $"تعداد {totalRows} رکورد برای انتقال یافت شد."
         });
 
-        // Step 2: Open source connection and read data
+        // Step 2: Open source connection
         await using var sourceConnection = new SqlConnection(sourceBuilder.ConnectionString);
         await sourceConnection.OpenAsync(cancellationToken);
 
+        // Get identity column information from source table BEFORE reading data
+        var identityColumnsInfo = new Dictionary<string, (int, int)>();
+        if (request.TransferMode == DataTransferMode.Table)
+        {
+            identityColumnsInfo = await GetIdentityColumnsInfoAsync(sourceConnection, request.SourceTableName, cancellationToken);
+        }
+
+        // Now read data from source
         var selectQuery = isQuery
             ? request.CustomQuery
             : $"SELECT * FROM [{request.SourceTableName}]";
@@ -600,6 +608,19 @@ public class SqlServerService : ISqlServerService
         // Step 5: Check if destination table exists and handle accordingly
         var tableExists = await TableExistsAsync(destConnection, request.DestinationTableName, cancellationToken);
 
+        // Enable IDENTITY_INSERT if needed (before transaction starts)
+        if (request.EnableIdentityInsert)
+        {
+            try
+            {
+                await SetIdentityInsertAsync(destConnection, request.DestinationTableName, true, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"خطا در فعال‌سازی IDENTITY_INSERT برای جدول '{request.DestinationTableName}': {ex.Message}", ex);
+            }
+        }
+
         // Begin transaction for rollback on failure
         await using var transaction = (SqlTransaction)await destConnection.BeginTransactionAsync(cancellationToken);
 
@@ -614,7 +635,7 @@ public class SqlServerService : ISqlServerService
                     StatusMessage = $"در حال ایجاد جدول '{request.DestinationTableName}'..."
                 });
 
-                var createTableSql = BuildCreateTableSql(request.DestinationTableName, schemaTable);
+                var createTableSql = BuildCreateTableSql(request.DestinationTableName, schemaTable, identityColumnsInfo);
                 await using var createCmd = new SqlCommand(createTableSql, destConnection, transaction)
                 {
                     CommandTimeout = 60
@@ -638,20 +659,30 @@ public class SqlServerService : ISqlServerService
                 await deleteCmd.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            // Step 6: Bulk copy data
+            // Step 6: Bulk copy data with optional identity insert
             progress?.Report(new TransferProgress
             {
                 TotalRows = totalRows,
                 StatusMessage = "در حال انتقال داده‌ها..."
             });
 
-            using var bulkCopy = new SqlBulkCopy(destConnection, SqlBulkCopyOptions.Default, transaction)
+            // Configure bulk copy options based on EnableIdentityInsert
+            var bulkCopyOptions = request.EnableIdentityInsert 
+                ? SqlBulkCopyOptions.KeepIdentity 
+                : SqlBulkCopyOptions.Default;
+
+            using var bulkCopy = new SqlBulkCopy(destConnection, bulkCopyOptions, transaction)
             {
                 DestinationTableName = $"[{request.DestinationTableName}]",
                 BatchSize = 1000,
                 BulkCopyTimeout = 0,
                 NotifyAfter = totalRows > 100 ? (int)(totalRows / 100) : 1
             };
+
+            // When using Default (EnableIdentityInsert = false), 
+            // SqlBulkCopy will skip identity columns and let SQL Server auto-generate them.
+            // When using KeepIdentity (EnableIdentityInsert = true),
+            // SqlBulkCopy will transfer identity values as-is.
 
             long transferredRows = 0;
             bulkCopy.SqlRowsCopied += (sender, e) =>
@@ -669,6 +700,20 @@ public class SqlServerService : ISqlServerService
 
             // Commit transaction
             await transaction.CommitAsync(cancellationToken);
+
+            // Disable IDENTITY_INSERT after successful commit
+            if (request.EnableIdentityInsert)
+            {
+                try
+                {
+                    await SetIdentityInsertAsync(destConnection, request.DestinationTableName, false, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail - IDENTITY_INSERT will auto-disable after session ends
+                    System.Diagnostics.Debug.WriteLine($"خطا در غیرفعال‌سازی IDENTITY_INSERT: {ex.Message}");
+                }
+            }
 
             progress?.Report(new TransferProgress
             {
@@ -689,6 +734,19 @@ public class SqlServerService : ISqlServerService
             catch
             {
                 // Ignore rollback errors
+            }
+
+            // Disable IDENTITY_INSERT in error case
+            if (request.EnableIdentityInsert)
+            {
+                try
+                {
+                    await SetIdentityInsertAsync(destConnection, request.DestinationTableName, false, cancellationToken);
+                }
+                catch
+                {
+                    // Ignore - IDENTITY_INSERT will auto-disable after session ends
+                }
             }
 
             progress?.Report(new TransferProgress
@@ -729,7 +787,8 @@ public class SqlServerService : ISqlServerService
     /// </summary>
     private static string BuildCreateTableSql(
         string tableName,
-        System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> columns)
+        System.Collections.ObjectModel.ReadOnlyCollection<System.Data.Common.DbColumn> columns,
+        Dictionary<string, (int seed, int increment)> identityColumns)
     {
         var columnDefs = new List<string>();
 
@@ -739,7 +798,16 @@ public class SqlServerService : ISqlServerService
             var colType = MapToSqlType(column);
             var nullable = (column.AllowDBNull ?? true) ? "NULL" : "NOT NULL";
 
-            columnDefs.Add($"[{colName}] {colType} {nullable}");
+            // Add IDENTITY keyword if this column is an identity column
+            if (identityColumns.ContainsKey(colName))
+            {
+                var (seed, increment) = identityColumns[colName];
+                columnDefs.Add($"[{colName}] {colType} IDENTITY({seed},{increment}) {nullable}");
+            }
+            else
+            {
+                columnDefs.Add($"[{colName}] {colType} {nullable}");
+            }
         }
 
         return $"CREATE TABLE [{tableName}] ({string.Join(", ", columnDefs)})";
@@ -763,4 +831,84 @@ public class SqlServerService : ISqlServerService
             _ => dataTypeName
         };
     }
+
+    /// <summary>
+    /// Gets the identity columns in a table.
+    /// </summary>
+    private static async Task<HashSet<string>> GetIdentityColumnsAsync(
+        SqlConnection connection,
+        string tableName,
+        SqlTransaction? transaction = null,
+        CancellationToken cancellationToken = default)
+    {
+        var identityColumns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        const string query = @"
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = @TableName 
+            AND COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA + '.' + TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1";
+
+        await using var command = new SqlCommand(query, connection, transaction);
+        command.Parameters.AddWithValue("@TableName", tableName);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            identityColumns.Add(reader.GetString(0));
+        }
+
+        return identityColumns;
+    }
+
+    /// <summary>
+    /// Gets identity column information for a table.
+    /// </summary>
+    private static async Task<Dictionary<string, (int seed, int increment)>> GetIdentityColumnsInfoAsync(
+        SqlConnection connection,
+        string tableName,
+        CancellationToken cancellationToken = default)
+    {
+        var identityInfo = new Dictionary<string, (int, int)>(StringComparer.OrdinalIgnoreCase);
+
+        const string query = @"
+            SELECT 
+                COLUMN_NAME,
+                IDENT_SEED(TABLE_SCHEMA + '.' + TABLE_NAME) AS Seed,
+                IDENT_INCR(TABLE_SCHEMA + '.' + TABLE_NAME) AS Increment
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_NAME = @TableName 
+            AND COLUMNPROPERTY(OBJECT_ID(TABLE_SCHEMA + '.' + TABLE_NAME), COLUMN_NAME, 'IsIdentity') = 1";
+
+        await using var command = new SqlCommand(query, connection);
+        command.Parameters.AddWithValue("@TableName", tableName);
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            var columnName = reader.GetString(0);
+            var seed = reader.IsDBNull(1) ? 1 : Convert.ToInt32(reader.GetValue(1));
+            var increment = reader.IsDBNull(2) ? 1 : Convert.ToInt32(reader.GetValue(2));
+            identityInfo[columnName] = (seed, increment);
+        }
+
+        return identityInfo;
+    }
+
+    /// <summary>
+    /// Executes SET IDENTITY_INSERT command on the table.
+    /// </summary>
+    private static async Task SetIdentityInsertAsync(
+        SqlConnection connection,
+        string tableName,
+        bool enable,
+        CancellationToken cancellationToken = default)
+    {
+        var onOff = enable ? "ON" : "OFF";
+        var sql = $"SET IDENTITY_INSERT [{tableName}] {onOff}";
+
+        await using var command = new SqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
 }
+
