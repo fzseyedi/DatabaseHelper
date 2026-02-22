@@ -48,17 +48,17 @@ public class ConnectionViewModel : ViewModelBase
     /// <summary>
     /// Gets the connection settings.
     /// </summary>
-    public ConnectionSettings ConnectionSettings { get; }
+    public virtual ConnectionSettings ConnectionSettings { get; }
 
     /// <summary>
     /// Gets the list of databases on the server.
     /// </summary>
-    public ObservableCollection<DatabaseInfo> Databases { get; }
+    public virtual ObservableCollection<DatabaseInfo> Databases { get; }
 
     /// <summary>
     /// Gets or sets whether the connection is established.
     /// </summary>
-    public bool IsConnected
+    public virtual bool IsConnected
     {
         get => _isConnected;
         private set

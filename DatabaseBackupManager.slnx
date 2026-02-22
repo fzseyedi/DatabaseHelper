@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="DatabaseBackupManager.UnitTests/DatabaseBackupManager.UnitTests.csproj" Id="9e8a427f-8639-42ee-8d9a-88b2bf8f1508" />
   <Project Path="DatabaseBackupManager/DatabaseBackupManager.csproj" />
 </Solution>
