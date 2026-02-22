@@ -1,6 +1,9 @@
-﻿# Database Backup Manager (پشتیبانی و بازیابی اطلاعات)
+﻿# DatabaseHelper — SQL Server Management Toolkit
 
-A comprehensive WPF desktop application for managing SQL Server databases — backup, restore, scheduling, field management, and cross-server data transfer.
+A lightweight WPF desktop application for SQL Server administrators and developers. 
+Backup, restore, transfer data, manage fields, and schedule operations — all in one simple tool.
+
+**سریال:** پشتیبانی و بازیابی اطلاعات
 
 ![.NET](https://img.shields.io/badge/.NET-10-blue)
 ![Language](https://img.shields.io/badge/Language-C%23%2014-purple)
@@ -14,14 +17,14 @@ A comprehensive WPF desktop application for managing SQL Server databases — ba
 
 ## 📸 Overview
 
-**Database Backup Manager** is a Persian (RTL) WPF application designed for SQL Server database administrators and developers. It provides a unified interface for:
+**DatabaseHelper** is a lightweight Persian (RTL) WPF application designed for SQL Server administrators and developers. It provides a unified interface for essential database operations:
 
-- 🔗 Connecting to SQL Server instances
-- 💾 Backing up databases (Full / Differential / Transaction Log)
-- 📥 Restoring databases from backup files
-- 📅 Scheduling automated backups
-- 📋 Adding new columns to existing tables
-- 📤 Transferring data between SQL Server databases
+- 🔗 **Connection Management** — Connect to SQL Server with Windows or SQL authentication
+- 💾 **Database Backup** — Full, Differential, and Transaction Log backups
+- 📥 **Database Restore** — Restore from backup files with flexible options
+- 📤 **Data Transfer** — Cross-server database migration with a simple wizard
+- 📋 **Field Management** — Add new columns to existing tables
+- 📅 **Backup Scheduling** — Automate backups with flexible scheduling
 
 ---
 
